@@ -1,11 +1,8 @@
 import requests, sys, time, os, argparse
+import schedule
 
 # Any characters to exclude, generally these are things that become problematic in CSV files
 unsafe_characters = ['\n', '"']
-
-# Used to identify columns, currently hardcoded order
-header = ["video_id"] + ["trending_date","view_count"]
-
 
 def setup(api_path):
     with open(api_path, 'r') as file:
@@ -59,7 +56,7 @@ def get_videos(items):
 
         # The following are special case features which require unique processing, or are not within the snippet dict
         #description = snippet.get("description", "")
-        trending_date = time.strftime("%y.%d.%m")
+        trending_date = time.strftime("%b %d %Y %H:%M:%S")
         view_count = statistics.get("viewCount", 0)
 
         
@@ -98,14 +95,14 @@ def write_to_file(video_data):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    with open(f"{output_dir}/videos.csv", "w+", encoding='utf-8') as file:
+    with open(f"{output_dir}/videos.csv", "a", encoding='utf-8') as file:
         for row in video_data:
             file.write(f"{row}\n")
 
 
 def get_data():
     
-    video_data = [",".join(header)] + get_pages()
+    video_data = get_pages()
     write_to_file(video_data)
 
 
@@ -121,3 +118,9 @@ if __name__ == "__main__":
     api_key= setup(args.key_path)
 
     get_data()
+
+    schedule.every().minutes.do(get_data)
+
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
