@@ -4,11 +4,14 @@ import schedule
 # Any characters to exclude, generally these are things that become problematic in CSV files
 unsafe_characters = ['\n', '"']
 
-def setup(api_path):
+def setup(api_path, video_id_path):
     with open(api_path, 'r') as file:
         api_key = file.readline()
 
-    return api_key
+    with open(video_id_path) as file:
+        video_ids = [x.rstrip() for x in file]
+
+    return api_key, video_ids
 
 
 def prepare_feature(feature):
@@ -18,9 +21,9 @@ def prepare_feature(feature):
     return f'"{feature}"'
 
 
-def api_request(page_token):
+def api_request(page_token, video_id):
     # Builds the URL and requests the JSON from it
-    request_url = f"https://www.googleapis.com/youtube/v3/videos?part=id,statistics,contentDetails,snippet{page_token}id=d26cqi0qAks&key={api_key}"
+    request_url = f"https://www.googleapis.com/youtube/v3/videos?part=id,statistics,contentDetails,snippet{page_token}id={video_id}&key={api_key}"
 
     # request_url = f"https://www.googleapis.com/youtube/v3/videos?part=id,statistics,contentDetails,snippet{page_token}chart=mostPopular&regionCode={country_code}&maxResults=50&key={api_key}"
     request = requests.get(request_url)
@@ -67,14 +70,14 @@ def get_videos(items):
     return lines
 
 
-def get_pages(next_page_token="&"):
+def get_pages(video_id, next_page_token="&"):
     video_data = []
 
     # Because the API uses page tokens (which are literally just the same function of numbers everywhere) it is much
     # more inconvenient to iterate over pages, but that is what is done here.
     while next_page_token is not None:
         # A page of data i.e. a list of videos and all needed data
-        video_data_page = api_request(next_page_token)
+        video_data_page = api_request(next_page_token, video_id)
 
         # Get the next page token and build a string which can be injected into the request with it, unless it's None,
         # then let the whole thing be None so that the loop ends after this cycle
@@ -88,22 +91,25 @@ def get_pages(next_page_token="&"):
     return video_data
 
 
-def write_to_file(video_data):
+def write_to_file(video_data, video_id):
 
     print(f"Writing data to file...")
 
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    with open(f"{output_dir}/videos.csv", "a", encoding='utf-8') as file:
+    with open(f"{output_dir}/{video_id}videos.csv", "a", encoding='utf-8') as file:
         for row in video_data:
             file.write(f"{row}\n")
 
 
 def get_data():
     
-    video_data = get_pages()
-    write_to_file(video_data)
+    for video_id in video_ids:
+        video_data = get_pages(video_id)
+        write_to_file(video_data, video_id)
+
+    
 
 
 if __name__ == "__main__":
@@ -111,11 +117,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--key_path', help='Path to the file containing the api key, by default will use api_key.txt in the same directory', default='api_key.txt')
     parser.add_argument('--output_dir', help='Path to save the outputted files in', default='output15p/')
+    parser.add_argument('--id_video', help='path to save list id video in', default='videoIDs.txt')
 
     args = parser.parse_args()
 
     output_dir = args.output_dir
-    api_key= setup(args.key_path)
+    api_key, video_ids = setup(args.key_path, args.id_video)
 
     get_data()
 
