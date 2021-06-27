@@ -126,7 +126,7 @@ if __name__ == "__main__":
 
     get_data()
 
-    schedule.every().minutes.do(get_data)
+    schedule.every(5).minutes.do(get_data)
 
     while True:
         schedule.run_pending()
