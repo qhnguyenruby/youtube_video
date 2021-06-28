@@ -116,7 +116,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--key_path', help='Path to the file containing the api key, by default will use api_key.txt in the same directory', default='api_key.txt')
-    parser.add_argument('--output_dir', help='Path to save the outputted files in', default='output15p/')
+    parser.add_argument('--output_dir', help='Path to save the outputted files in', default='output5p/')
     parser.add_argument('--id_video', help='path to save list id video in', default='videoIDs.txt')
 
     args = parser.parse_args()
